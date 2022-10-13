@@ -27,7 +27,7 @@ pub trait Iterator {
         }
         accum
     }
-    fn advance_by(&mut self, n: usize) ->  Result<(), usize> {
+    fn advance_by(&mut self, n: usize) -> Result<(), usize> {
         for i in 0..n {
             self.next().ok_or(i)?;
         }

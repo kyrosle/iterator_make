@@ -2,7 +2,7 @@ use crate::iterator::{IntoIterator, Iterator};
 
 #[derive(Clone, Debug)]
 struct Item<A> {
-    opt: Option<A>
+    opt: Option<A>,
 }
 impl<A> Iterator for Item<A> {
     type Item = A;
@@ -12,7 +12,7 @@ impl<A> Iterator for Item<A> {
     }
 }
 pub struct IntoIter<A> {
-    inner: Item<A>
+    inner: Item<A>,
 }
 impl<A> Iterator for IntoIter<A> {
     type Item = A;

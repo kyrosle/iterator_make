@@ -1,6 +1,6 @@
 #![feature(core_intrinsics)]
-mod option;
 mod iterator;
+mod option;
 mod range;
 
 use std::{intrinsics::assume, marker::PhantomData, mem, ptr::NonNull};
@@ -74,9 +74,78 @@ macro_rules! iterator {
         }
         impl<'a, T> Iterator for $name<'a, T> {
             type Item = $elem;
+
+            fn next(&mut self) -> Option<$elem> {
+                unsafe {
+                    assum(!self.ptr.as_ptr().is_null());
+                    if mem::size_of::<T>() == 0 {
+                        assum(!self.ptr.as_ptr().is_null());
+                    }
+                    if is_empty!(self) {
+                        None
+                    } else {
+                        Some(next_unchecked(self))
+                    }
+                }
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                let exact = len!(self);
+                (exact, Some(exact))
+            }
+
+            fn count(self) -> usize {
+                len!(self)
+            }
+
+            fn nth(&mut self, n: usize) -> Option<usize> {
+                if n >= len!(self) {
+                    if mem::size_of::<T>() == 0 {
+                        self.end = self.ptr.as_ptr();
+                    } else {
+                        unsafe {
+                            self.ptr = NonNull::new_unchecked(self.end as *mut T);
+                        }
+                    }
+                    return None;
+                }
+                unsafe {
+                    self.post_inc_start(n as isize);
+                    Some(next_unchecked!(self))
+                }
+            }
+
+            fn advance_by(&mut self, n: usize) -> Result<(), usize> {
+                let advance = cmp::min(len!(self), n);
+                unsafe { self.post_inc_start(advance as isize) };
+                if advance == n { Ok(())} else { Err(advance) }
+            }
+
+            fn last(mut self) -> Option<$elem> {
+                self.next_back()
+            }
         }
     };
 }
 
-fn main() {
+macro_rules! is_empty {
+    ($self: ident) => {
+        $self.ptr.as_ptr() as *const T == $self.end
+    };
 }
+
+macro_rules! len {
+    ($self:ident) => {{
+        let start = $self.ptr;
+        let size = size_from_ptr(start.as_ptr());
+        if size == 0 {
+            ($self.end as usize).wrapping_sub(start.as_ptr() as usize)
+        } else {
+            let diff = unsafe { unchecked_add($self.end as usize, start.as_ptr() as usize) };
+            unsafe { exact_div(diff, size) }
+        }
+    }};
+}
+
+
+fn main() {}
